@@ -4,18 +4,27 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.GridLayout;
-import android.widget.GridView;
+
+import com.etsy.android.grid.StaggeredGridView;
+
+import java.util.ArrayList;
 
 
 public class Main extends Activity {
+
+    private static final int SAMPLE_DATA_ITEM_COUNT = 5;
+    private StaggeredGridView sgv;
+    private DataAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        GridView gv = (GridView) findViewById(R.id.gridView);
-        gv.setAdapter(new ImageAdapter(getApplicationContext()));
+
+        setTitle("MoBooru v. 0.1a");
+        sgv = (StaggeredGridView) findViewById(R.id.gridView);
+        adapter = new DataAdapter(this, R.layout.staggered, generateSampleData());
+        sgv.setAdapter(adapter);
     }
 
 
@@ -32,9 +41,18 @@ public class Main extends Activity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
+        return id == R.id.action_settings || super.onOptionsItemSelected(item);
+    }
+
+    public static ArrayList<Data> generateSampleData() {
+        final ArrayList<Data> datas = new ArrayList<Data>();
+        for (int i = 0; i < SAMPLE_DATA_ITEM_COUNT; i++) {
+            Data data = new Data();
+            data.imgUrl = "https://jiresal-test.s3.amazonaws.com/deal3.png";
+            data.title = "Image";
+            data.desc = "Description";
+            datas.add(data);
         }
-        return super.onOptionsItemSelected(item);
+        return datas;
     }
 }
