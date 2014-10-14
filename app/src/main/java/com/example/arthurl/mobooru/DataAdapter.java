@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import com.etsy.android.grid.util.DynamicHeightImageView;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -50,6 +51,9 @@ public class DataAdapter extends ArrayAdapter<Data> {
         holder.image.setHeightRatio(1.0);
         holder.title.setText(data.title);
         holder.description.setText(data.desc);
+        Picasso.with(this.getContext())
+                .load(data.imgUrl)
+                .into(holder.image);
 
         return row;
     }

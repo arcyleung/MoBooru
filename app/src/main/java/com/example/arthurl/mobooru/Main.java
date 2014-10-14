@@ -48,7 +48,7 @@ public class Main extends Activity {
         final ArrayList<Data> datas = new ArrayList<Data>();
         for (int i = 0; i < SAMPLE_DATA_ITEM_COUNT; i++) {
             Data data = new Data();
-            data.imgUrl = "https://jiresal-test.s3.amazonaws.com/deal3.png";
+            data.imgUrl = "http://icons.iconarchive.com/icons/uiconstock/socialmedia/512/Reddit-icon.png";
             data.title = "Image";
             data.desc = "Description";
             datas.add(data);
