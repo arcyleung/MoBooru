@@ -7,14 +7,24 @@ import android.view.MenuItem;
 
 import com.etsy.android.grid.StaggeredGridView;
 
+import org.json.*;
+
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 
 public class Main extends Activity {
 
-    private static final int SAMPLE_DATA_ITEM_COUNT = 5;
+    int pageSize = 30;
     private StaggeredGridView sgv;
     private DataAdapter adapter;
+    public ArrayList<Data> datas = new ArrayList<Data>();
+    JSONArray jsonObjs;
+
+    URL url1;
+    String s1 = "http://redditbooru.com/images/?sources=1&afterDate=";
+    long unixTime = System.currentTimeMillis() / 1000L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,8 +33,21 @@ public class Main extends Activity {
 
         setTitle("MoBooru v. 0.1a");
         sgv = (StaggeredGridView) findViewById(R.id.gridView);
-        adapter = new DataAdapter(this, R.layout.staggered, generateSampleData());
+        adapter = new DataAdapter(this, R.layout.staggered, addToArry());
         sgv.setAdapter(adapter);
+        try {
+            url1 = new URL(s1 + unixTime);
+            Scanner scan = new Scanner(url1.openStream());
+            String str = new String();
+            while (scan.hasNext())
+                str += scan.nextLine();
+            scan.close();
+
+            jsonObjs = new JSONArray(str);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -44,15 +67,20 @@ public class Main extends Activity {
         return id == R.id.action_settings || super.onOptionsItemSelected(item);
     }
 
-    public static ArrayList<Data> generateSampleData() {
-        final ArrayList<Data> datas = new ArrayList<Data>();
-        for (int i = 0; i < SAMPLE_DATA_ITEM_COUNT; i++) {
+    public ArrayList<Data> addToArry() {
+
+        for (int i = 0; i < pageSize; i++) {
             Data data = new Data();
-            data.imgUrl = "http://icons.iconarchive.com/icons/uiconstock/socialmedia/512/Reddit-icon.png";
+            try {
+                data.imgUrl = jsonObjs.getJSONObject(i).getString("cdnUrl");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
             data.title = "Image";
             data.desc = "Description";
             datas.add(data);
         }
         return datas;
     }
+
 }
