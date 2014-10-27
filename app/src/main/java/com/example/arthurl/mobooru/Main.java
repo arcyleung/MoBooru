@@ -1,6 +1,7 @@
 package com.example.arthurl.mobooru;
 
 import android.app.Activity;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,7 +21,7 @@ public class Main extends Activity {
     private StaggeredGridView sgv;
     private DataAdapter adapter;
     public ArrayList<Data> datas = new ArrayList<Data>();
-    JSONArray jsonObjs;
+    JSONArray jsonObjs = new JSONArray();
 
     URL url1;
     String s1 = "http://redditbooru.com/images/?sources=1&afterDate=";
@@ -30,26 +31,48 @@ public class Main extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        setTitle("MoBooru v. 0.1a");
-        sgv = (StaggeredGridView) findViewById(R.id.gridView);
-        adapter = new DataAdapter(this, R.layout.staggered, addToArry());
-        sgv.setAdapter(adapter);
+        LoadJSONasync runner = new LoadJSONasync();
         try {
-            url1 = new URL(s1 + unixTime);
-            Scanner scan = new Scanner(url1.openStream());
-            String str = new String();
-            while (scan.hasNext())
-                str += scan.nextLine();
-            scan.close();
-
-            jsonObjs = new JSONArray(str);
-
+            jsonObjs = runner.execute(jsonObjs).get();
+            adapter = new DataAdapter(this, R.layout.staggered, addToArry());
+            setTitle("MoBooru v. 0.1a");
+            sgv = (StaggeredGridView) findViewById(R.id.gridView);
+            sgv.setAdapter(adapter);
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("jsonparsefailed");
         }
+
     }
 
+
+    private class LoadJSONasync extends AsyncTask <JSONArray, Void, JSONArray> {
+
+        protected JSONArray doInBackground(JSONArray... urls) {
+            try {
+                url1 = new URL(s1 + unixTime);
+
+                Scanner scan = new Scanner(url1.openStream());
+                String str = "";
+                while (scan.hasNext())
+                    str += scan.nextLine();
+                scan.close();
+
+                jsonObjs = new JSONArray(str);
+
+            } catch (Exception e) {
+                System.out.println("JSON parse failed");
+                e.printStackTrace();
+            }
+
+            return jsonObjs;
+        }
+
+        @Override
+        protected void onPostExecute(JSONArray result) {
+            jsonObjs = result;
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -73,7 +96,8 @@ public class Main extends Activity {
             Data data = new Data();
             try {
                 data.imgUrl = jsonObjs.getJSONObject(i).getString("cdnUrl");
-            } catch (JSONException e) {
+            } catch (Exception e) {
+                System.out.println("JSON parse failed2");
                 e.printStackTrace();
             }
             data.title = "Image";
