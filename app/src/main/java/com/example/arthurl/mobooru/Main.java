@@ -96,12 +96,12 @@ public class Main extends Activity {
             Data data = new Data();
             try {
                 data.imgUrl = jsonObjs.getJSONObject(i).getString("cdnUrl");
+                data.title = jsonObjs.getJSONObject(i).getString("title");
+                data.desc = jsonObjs.getJSONObject(i).getString("sourceUrl");
             } catch (Exception e) {
                 System.out.println("JSON parse failed2");
                 e.printStackTrace();
             }
-            data.title = "Image";
-            data.desc = "Description";
             datas.add(data);
         }
         return datas;
