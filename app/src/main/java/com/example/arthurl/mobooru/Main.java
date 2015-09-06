@@ -102,6 +102,12 @@ public class Main extends Activity {
                 System.out.println("JSON parse failed2");
                 e.printStackTrace();
             }
+            if (data.desc.equals("null")){
+                data.desc = "";
+            }
+            if (data.imgUrl.equals("null")){
+                data.imgUrl = "";
+            }
             datas.add(data);
         }
         return datas;
