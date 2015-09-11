@@ -3,6 +3,7 @@ package com.example.arthurl.mobooru;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
@@ -33,12 +34,15 @@ public class Main extends Activity {
     final String verstring = "MoBooru v. 0.1a";
 
     String mainsite = "http://redditbooru.com";
+//    String mainsite = "http://www.mangahere.com/mangalist/";
     URL url1;
     String s1 = "http://redditbooru.com/images/?sources=17&afterDate=";
     long unixTimeInit = System.currentTimeMillis() / 1000L;
     Document doc;
     Elements redditSubs;
     ArrayList<Sub> subsList = new ArrayList<Sub>();
+    String catJSONs = "";
+    JSONArray catJSONa;
 
 
 
@@ -53,12 +57,6 @@ public class Main extends Activity {
             setTitle(verstring);
             sgv = (StaggeredGridView) findViewById(R.id.gridView);
             sgv.setAdapter(adapter);
-            doc = Jsoup.connect(mainsite).get();
-            redditSubs = doc.select("ul li label");
-            for (Element sub : redditSubs){
-                String at = sub.attr("for");
-                System.out.println(at);
-            }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("jsonparsefailed");
@@ -71,6 +69,41 @@ public class Main extends Activity {
     private class LoadJSONasync extends AsyncTask<JSONArray, Void, JSONArray> {
 
         protected JSONArray doInBackground(JSONArray... urls) {
+            try {
+                doc = Jsoup.connect(mainsite)
+                        .header("Accept-Encoding", "gzip, deflate")
+                        .userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0")
+                        .maxBodySize(0)
+                        .timeout(6000000)
+                        .get();
+                redditSubs = doc.select("script");
+                int i=0;
+                for (Element sub : redditSubs){
+                    String at = sub.toString();
+                    String [] sp = at.split("-");
+//                    subsList.add(new Sub(sp[0], Integer.parseInt(sp[1])));
+                    System.out.println();
+                    System.out.println(i+" - dbg-msg: " + redditSubs.size() + " -- " + at);
+                    if (i == 2){
+                        catJSONs = at;
+                    }
+                    i++;
+                }
+
+                catJSONs = catJSONs.substring(catJSONs.indexOf("["));
+                catJSONs = catJSONs.substring(0, catJSONs.indexOf("]")+1);
+
+                catJSONa = new JSONArray(catJSONs);
+
+                for (int j = 0; j < catJSONa.length(); j++){
+                    subsList.add(new Sub(catJSONa.getJSONObject(j).getString("name"), catJSONa.getJSONObject(j).getInt("value")));
+                }
+
+            } catch (Exception e){
+                System.out.println("connection failed");
+                e.printStackTrace();
+            }
+
             try {
                 url1 = new URL(s1 + unixTimeInit);
 
@@ -136,7 +169,7 @@ public class Main extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
-
+                startActivity(new Intent(Main.this, Settings.class));
                 return true;
             case R.id.action_about:
                 new AlertDialog.Builder(this)
