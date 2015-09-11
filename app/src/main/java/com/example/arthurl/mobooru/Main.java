@@ -98,6 +98,7 @@ public class Main extends Activity {
                 for (int j = 0; j < catJSONa.length(); j++){
                     subsList.add(new Sub(catJSONa.getJSONObject(j).getString("name"), catJSONa.getJSONObject(j).getInt("value")));
                 }
+                System.out.println(subsList.size());
 
             } catch (Exception e){
                 System.out.println("connection failed");
@@ -169,7 +170,7 @@ public class Main extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
-                startActivity(new Intent(Main.this, Settings.class));
+                startActivity(new Intent(Main.this, Settings.class).putExtra("arylst", subsList));
                 return true;
             case R.id.action_about:
                 new AlertDialog.Builder(this)
