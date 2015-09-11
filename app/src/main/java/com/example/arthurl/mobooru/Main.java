@@ -170,7 +170,7 @@ public class Main extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
-                startActivity(new Intent(Main.this, Settings.class).putExtra("arylst", subsList));
+                startActivity(new Intent(Main.this, Settings_subs.class).putExtra("arylst", subsList));
                 return true;
             case R.id.action_about:
                 new AlertDialog.Builder(this)

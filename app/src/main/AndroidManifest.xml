@@ -19,7 +19,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Settings"
+            android:name=".Settings_subs"
             android:label="@string/title_activity_settings" >
         </activity>
     </application>
