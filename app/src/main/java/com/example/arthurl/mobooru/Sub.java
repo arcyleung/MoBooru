@@ -12,7 +12,12 @@ public class Sub implements Serializable, Comparable{
     public boolean selected = false;
 
     public Sub(String s, int n){
-        subname = s;
+        subname = s.toLowerCase();
+        subID = n;
+    }
+
+    public Sub(String s, int n, boolean c){
+        subname = s.toLowerCase();
         subID = n;
     }
 

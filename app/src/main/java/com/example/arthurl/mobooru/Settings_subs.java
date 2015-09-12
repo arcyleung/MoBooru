@@ -2,7 +2,9 @@ package com.example.arthurl.mobooru;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -18,18 +20,40 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class Settings_subs extends Activity {
 
 
     ArrayList<Sub> subsList;
     CustomAdapter adp = null;
+    String favs;
+    String [] favsa;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings_subs);
+        getActionBar().setDisplayHomeAsUpEnabled(true);
         subsList = (ArrayList<Sub>) getIntent().getSerializableExtra("arylst");
+        Collections.sort(subsList);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        if (prefs.getString("FAV_SUBS", ""+R.string.defaultsub).equals("")){
+            favs = "1";
+        } else {
+            favs = prefs.getString("FAV_SUBS", ""+R.string.defaultsub);
+        }
+
+        favsa = favs.split(",");
+//        System.out.println(favsa.length + " --- " + favs);
+        for (int a = 0; a < favsa.length; a++){
+            for (int b = 0; b < subsList.size(); b++){
+                if (Integer.parseInt(favsa[a]) == subsList.get(b).subID){
+                    subsList.get(b).selected = true;
+                }
+            }
+        }
         displayList();
         buttonPressed();
     }
@@ -65,6 +89,9 @@ public class Settings_subs extends Activity {
             public void onItemClick(AdapterView<?> parent, View view, int p, long id) {
                 Sub sub = (Sub) parent.getItemAtPosition(p);
                 Toast.makeText(getApplicationContext(), " Selected " + sub.subname, Toast.LENGTH_LONG).show();
+                ((Sub) parent.getItemAtPosition(p)).selected = !((Sub) parent.getItemAtPosition(p)).selected;
+                CheckBox cb = (CheckBox) view.findViewById(R.id.checkBox);
+                cb.setChecked(!cb.isChecked());
             }
         });
     }
@@ -75,8 +102,7 @@ public class Settings_subs extends Activity {
 
         public CustomAdapter(Context context, int textViewResourceId, ArrayList<Sub> subsList) {
             super(context, textViewResourceId, subsList);
-            this.subsList = new ArrayList<Sub>();
-            this.subsList.addAll(subsList);
+            this.subsList = subsList;
         }
 
         private class ViewHolder {
@@ -85,7 +111,7 @@ public class Settings_subs extends Activity {
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(final int position, View convertView, ViewGroup parent) {
 
             ViewHolder holder = null;
             Log.v("ConvertView", String.valueOf(position));
@@ -93,7 +119,7 @@ public class Settings_subs extends Activity {
             if (convertView == null) {
                 LayoutInflater vi = (LayoutInflater)getSystemService(
                         Context.LAYOUT_INFLATER_SERVICE);
-                convertView = vi.inflate(R.layout.activity_settings_subs_checkboxes, null);
+                convertView = vi.inflate(R.layout.activity_settings_subs_checkboxes, parent, false);
 
                 holder = new ViewHolder();
                 holder.code = (TextView) convertView.findViewById(R.id.code);
@@ -103,12 +129,11 @@ public class Settings_subs extends Activity {
                 holder.name.setOnClickListener( new View.OnClickListener() {
                     public void onClick(View v) {
                         CheckBox cb = (CheckBox) v ;
-                        Sub sub = (Sub) cb.getTag();
                         Toast.makeText(getApplicationContext(),
                                 "Clicked on Checkbox: " + cb.getText() +
                                         " is " + cb.isChecked(),
                                 Toast.LENGTH_LONG).show();
-                        sub.selected = cb.isChecked();
+                        subsList.get(position).selected = cb.isChecked();
                     }
                 });
             }
@@ -134,6 +159,7 @@ public class Settings_subs extends Activity {
             @Override
             public void onClick(View v) {
                 StringBuffer response = new StringBuffer();
+
                 response.append(" Selected: \n");
                 ArrayList<Sub> s = adp.subsList;
                 for (Sub d : s) {
@@ -145,5 +171,23 @@ public class Settings_subs extends Activity {
                 Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        String serial = "";
+        for (Sub s : subsList){
+            if (s.selected){
+                serial = serial + s.subID+",";
+            }
+        }
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        SharedPreferences.Editor prefsEditor = prefs.edit();
+        prefsEditor.clear();
+        prefsEditor.putString("FAV_SUBS", serial);
+        prefsEditor.commit();
+
+        System.out.println("paused");
     }
 }

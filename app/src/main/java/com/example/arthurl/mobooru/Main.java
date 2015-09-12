@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -29,44 +31,74 @@ public class Main extends Activity {
     private StaggeredGridView sgv;
     private DataAdapter adapter;
     public ArrayList<Data> datas = new ArrayList<Data>();
-    JSONArray jsonObjs = new JSONArray();
+
 
     final String verstring = "MoBooru v. 0.1a";
 
     String mainsite = "http://redditbooru.com";
-//    String mainsite = "http://www.mangahere.com/mangalist/";
     URL url1;
-    String s1 = "http://redditbooru.com/images/?sources=17&afterDate=";
-    long unixTimeInit = System.currentTimeMillis() / 1000L;
+    String favstring = "1";
+    String s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
+    long lastTime;
     Document doc;
     Elements redditSubs;
     ArrayList<Sub> subsList = new ArrayList<Sub>();
     String catJSONs = "";
     JSONArray catJSONa;
+    LoadJSONasyncInit runner;
+    JSONArray jsonObjs;
 
+    int current_page = 1;
+    Boolean loadingMore = true;
+    Boolean stopLoadingData = false;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        LoadJSONasync runner = new LoadJSONasync();
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        favstring = prefs.getString("FAV_SUBS", "" + R.string.defaultsub).replaceAll(",", "%2C");
+//        System.out.println(favstring);
+        s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
+        runner = new LoadJSONasyncInit();
+
         try {
+            JSONArray jsonObjs = new JSONArray();
             jsonObjs = runner.execute(jsonObjs).get();
-            adapter = new DataAdapter(this, R.layout.staggered, addToArry());
+            adapter = new DataAdapter(this, R.layout.staggered, addToArry(jsonObjs));
             setTitle(verstring);
             sgv = (StaggeredGridView) findViewById(R.id.gridView);
             sgv.setAdapter(adapter);
+            sgv.setOnScrollListener(new EndlessScrollListener() {
+                @Override
+                public void onLoadMore(int page, int totalItemsCount) {
+
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("jsonparsefailed");
-
         }
+    }
 
+    @Override
+    public void onRestart() {
+        super.onRestart();
+        finish();
+        startActivity(getIntent());
     }
 
 
-    private class LoadJSONasync extends AsyncTask<JSONArray, Void, JSONArray> {
+    // Append more data into the adapter
+    public void customLoadMoreDataFromApi(int offset) {
+        // This method probably sends out a network request and appends new data items to your adapter.
+        // Use the offset value and add it as a parameter to your API request to retrieve paginated data.
+        // Deserialize API response and then construct new objects to append to the adapter
+    }
+
+    private class LoadJSONasyncInit extends AsyncTask<JSONArray, Void, JSONArray> {
 
         protected JSONArray doInBackground(JSONArray... urls) {
             try {
@@ -77,36 +109,33 @@ public class Main extends Activity {
                         .timeout(6000000)
                         .get();
                 redditSubs = doc.select("script");
-                int i=0;
-                for (Element sub : redditSubs){
+                int i = 0;
+                for (Element sub : redditSubs) {
                     String at = sub.toString();
-                    String [] sp = at.split("-");
-//                    subsList.add(new Sub(sp[0], Integer.parseInt(sp[1])));
-                    System.out.println();
-                    System.out.println(i+" - dbg-msg: " + redditSubs.size() + " -- " + at);
-                    if (i == 2){
+                    String[] sp = at.split("-");
+                    if (i == 2) {
                         catJSONs = at;
                     }
                     i++;
                 }
 
                 catJSONs = catJSONs.substring(catJSONs.indexOf("["));
-                catJSONs = catJSONs.substring(0, catJSONs.indexOf("]")+1);
+                catJSONs = catJSONs.substring(0, catJSONs.indexOf("]") + 1);
 
                 catJSONa = new JSONArray(catJSONs);
 
-                for (int j = 0; j < catJSONa.length(); j++){
+                for (int j = 0; j < catJSONa.length(); j++) {
                     subsList.add(new Sub(catJSONa.getJSONObject(j).getString("name"), catJSONa.getJSONObject(j).getInt("value")));
                 }
-                System.out.println(subsList.size());
+//                System.out.println(subsList.size());
 
-            } catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("connection failed");
                 e.printStackTrace();
             }
 
             try {
-                url1 = new URL(s1 + unixTimeInit);
+                url1 = new URL(s1 + lastTime);
 
                 Scanner scan = new Scanner(url1.openStream());
                 String str = "";
@@ -115,6 +144,7 @@ public class Main extends Activity {
                 scan.close();
 
                 jsonObjs = new JSONArray(str);
+                addToArry(jsonObjs);
 
             } catch (Exception e) {
                 System.out.println("JSON parse failed");
@@ -130,6 +160,58 @@ public class Main extends Activity {
         }
     }
 
+    private class loadMorePhotos extends AsyncTask<Void, Void, Void> {
+
+        JSONArray tmp;
+        @Override
+        protected Void doInBackground(Void... arg0) {
+
+            // SET LOADING MORE "TRUE"
+            loadingMore = true;
+
+            // INCREMENT CURRENT PAGE
+            current_page += 1;
+
+            try {
+                url1 = new URL(s1 + lastTime);
+
+                Scanner scan = new Scanner(url1.openStream());
+                String str = "";
+                while (scan.hasNext())
+                    str += scan.nextLine();
+                scan.close();
+
+                tmp = new JSONArray(str);
+                addToArry(tmp);
+            } catch (Exception e) {
+                System.out.println("JSON parse failed");
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+
+            // get listview current position - used to maintain scroll position
+            int currentPosition = sgv.getFirstVisiblePosition();
+
+            // APPEND NEW DATA TO THE ARRAYLIST AND SET THE ADAPTER TO THE
+            // LISTVIEW
+            adapter = new DataAdapter(Main.this, R.layout.staggered, addToArry(tmp));
+            sgv.setAdapter(adapter);
+
+            // Setting new scroll position
+            sgv.setSelection(currentPosition + 1);
+
+            // SET LOADINGMORE "FALSE" AFTER ADDING NEW FEEDS TO THE EXISTING
+            // LIST
+            loadingMore = false;
+        }
+
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -138,19 +220,19 @@ public class Main extends Activity {
     }
 
 
-    public ArrayList<Data> addToArry() {
+    public ArrayList<Data> addToArry(JSONArray ja) {
 
         for (int i = 0; i < pageSize; i++) {
             Data data = new Data();
             try {
-                data.thumbImgUrl = "http://redditbooru.com/"+jsonObjs.getJSONObject(i).getString("thumb")+"_300_300.jpg";
-                data.imgUrl = jsonObjs.getJSONObject(i).getString("cdnUrl");
-                data.width = jsonObjs.getJSONObject(i).getInt("width");
-                data.height = jsonObjs.getJSONObject(i).getInt("height");
-                data.nsfw = jsonObjs.getJSONObject(i).getBoolean("nsfw");
-                data.title = jsonObjs.getJSONObject(i).getString("title");
-                data.desc = jsonObjs.getJSONObject(i).getString("sourceUrl");
-                data.rat = data.width/data.height;
+                data.thumbImgUrl = "http://redditbooru.com/" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
+                data.imgUrl = ja.getJSONObject(i).getString("cdnUrl");
+                data.width = ja.getJSONObject(i).getInt("width");
+                data.height = ja.getJSONObject(i).getInt("height");
+                data.nsfw = ja.getJSONObject(i).getBoolean("nsfw");
+                data.title = ja.getJSONObject(i).getString("title");
+                data.desc = ja.getJSONObject(i).getString("sourceUrl");
+                data.rat = data.width / data.height;
             } catch (Exception e) {
                 System.out.println("JSON parse failed2");
                 e.printStackTrace();
