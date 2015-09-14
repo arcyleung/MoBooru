@@ -1,5 +1,6 @@
 package com.example.arthurl.mobooru;
 
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -7,9 +8,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.etsy.android.grid.StaggeredGridView;
 
@@ -33,11 +36,15 @@ public class Main extends Activity {
     public ArrayList<Data> datas = new ArrayList<Data>();
 
 
-    final String verstring = "MoBooru v. 0.1a";
+    final String verstring = "MoBooru v. 0.2a";
 
     String mainsite = "http://redditbooru.com";
     URL url1;
-    String favstring = "1";
+
+    // DEFAULT SETTINGS
+    String favstring = "";
+    Boolean showNsfw = false;
+
     String s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
     long lastTime;
     Document doc;
@@ -47,34 +54,39 @@ public class Main extends Activity {
     JSONArray catJSONa;
     LoadJSONasyncInit runner;
     JSONArray jsonObjs;
+    LoadMorePhotos lm;
 
     int current_page = 1;
+    int currentScrollPos = 0;
     Boolean loadingMore = true;
     Boolean stopLoadingData = false;
-
+    int scrolly = 0;
+    Parcelable state;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         favstring = prefs.getString("FAV_SUBS", "" + R.string.defaultsub).replaceAll(",", "%2C");
-//        System.out.println(favstring);
-        s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
+        showNsfw = prefs.getBoolean("SHOW_NSFW", false);
+        System.out.println(favstring);
+        s1 = "http://redditbooru.com/images/?sources=1" + favstring;
         runner = new LoadJSONasyncInit();
 
         try {
             JSONArray jsonObjs = new JSONArray();
             jsonObjs = runner.execute(jsonObjs).get();
-            adapter = new DataAdapter(this, R.layout.staggered, addToArry(jsonObjs));
+            ArrayList<Data> tmp = addToArry(jsonObjs);
+            adapter = new DataAdapter(this, R.layout.staggered, tmp, showNsfw);
             setTitle(verstring);
             sgv = (StaggeredGridView) findViewById(R.id.gridView);
             sgv.setAdapter(adapter);
             sgv.setOnScrollListener(new EndlessScrollListener() {
                 @Override
                 public void onLoadMore(int page, int totalItemsCount) {
-
+                    lm = new LoadMorePhotos();
+                    lm.execute();
                 }
             });
         } catch (Exception e) {
@@ -112,7 +124,6 @@ public class Main extends Activity {
                 int i = 0;
                 for (Element sub : redditSubs) {
                     String at = sub.toString();
-                    String[] sp = at.split("-");
                     if (i == 2) {
                         catJSONs = at;
                     }
@@ -144,7 +155,6 @@ public class Main extends Activity {
                 scan.close();
 
                 jsonObjs = new JSONArray(str);
-                addToArry(jsonObjs);
 
             } catch (Exception e) {
                 System.out.println("JSON parse failed");
@@ -160,7 +170,7 @@ public class Main extends Activity {
         }
     }
 
-    private class loadMorePhotos extends AsyncTask<Void, Void, Void> {
+    private class LoadMorePhotos extends AsyncTask<Void, Void, Void> {
 
         JSONArray tmp;
         @Override
@@ -173,6 +183,7 @@ public class Main extends Activity {
             current_page += 1;
 
             try {
+                s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
                 url1 = new URL(s1 + lastTime);
 
                 Scanner scan = new Scanner(url1.openStream());
@@ -182,7 +193,6 @@ public class Main extends Activity {
                 scan.close();
 
                 tmp = new JSONArray(str);
-                addToArry(tmp);
             } catch (Exception e) {
                 System.out.println("JSON parse failed");
                 e.printStackTrace();
@@ -199,11 +209,10 @@ public class Main extends Activity {
 
             // APPEND NEW DATA TO THE ARRAYLIST AND SET THE ADAPTER TO THE
             // LISTVIEW
-            adapter = new DataAdapter(Main.this, R.layout.staggered, addToArry(tmp));
-            sgv.setAdapter(adapter);
+            datas = addToArry(tmp);
+            adapter.datas = datas;
+            adapter.notifyDataSetChanged();
 
-            // Setting new scroll position
-            sgv.setSelection(currentPosition + 1);
 
             // SET LOADINGMORE "FALSE" AFTER ADDING NEW FEEDS TO THE EXISTING
             // LIST
@@ -225,7 +234,7 @@ public class Main extends Activity {
         for (int i = 0; i < pageSize; i++) {
             Data data = new Data();
             try {
-                data.thumbImgUrl = "http://redditbooru.com/" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
+                data.thumbImgUrl = "http://redditbooru.com" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
                 data.imgUrl = ja.getJSONObject(i).getString("cdnUrl");
                 data.width = ja.getJSONObject(i).getInt("width");
                 data.height = ja.getJSONObject(i).getInt("height");
@@ -233,6 +242,10 @@ public class Main extends Activity {
                 data.title = ja.getJSONObject(i).getString("title");
                 data.desc = ja.getJSONObject(i).getString("sourceUrl");
                 data.rat = data.width / data.height;
+                if (i == pageSize-1){
+                    lastTime = Long.parseLong(ja.getJSONObject(i).getString("dateCreated"));
+                    System.out.println(lastTime);
+                }
             } catch (Exception e) {
                 System.out.println("JSON parse failed2");
                 e.printStackTrace();
@@ -243,6 +256,7 @@ public class Main extends Activity {
             if (data.thumbImgUrl.equals("null")) {
                 data.thumbImgUrl = "";
             }
+
             datas.add(data);
         }
         return datas;

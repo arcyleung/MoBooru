@@ -17,13 +17,15 @@ public class DataAdapter extends ArrayAdapter<Data> {
     Activity activity;
     int resource;
     List<Data> datas;
+    Boolean showNsfw;
 
-    public DataAdapter(Activity activity, int resource, List<Data> objects) {
+    public DataAdapter(Activity activity, int resource, List<Data> objects, Boolean shwNsfw) {
         super(activity, resource, objects);
 
         this.activity = activity;
         this.resource = resource;
         this.datas = objects;
+        this.showNsfw = shwNsfw;
     }
 
     @Override
@@ -36,29 +38,39 @@ public class DataAdapter extends ArrayAdapter<Data> {
             row = inflater.inflate(resource, parent, false);
 
             holder = new DealHolder();
-            holder.image = (DynamicHeightImageView)row.findViewById(R.id.image);
-            holder.title = (TextView)row.findViewById(R.id.title);
-            holder.description = (TextView)row.findViewById(R.id.description);
+            holder.image = (DynamicHeightImageView) row.findViewById(R.id.image);
+            holder.title = (TextView) row.findViewById(R.id.title);
+            holder.description = (TextView) row.findViewById(R.id.description);
 
             row.setTag(holder);
-        }
-        else {
+        } else {
             holder = (DealHolder) row.getTag();
         }
 
         final Data data = datas.get(position);
 
-        holder.image.setHeightRatio(1.0);
+        holder.image.setHeightRatio(1);
         holder.title.setText(data.title);
-        if (data.desc == null){
+        if (data.desc == null) {
             holder.description.setText("");
         } else {
             holder.description.setText(data.desc);
         }
-        Picasso.with(this.getContext())
-                .load(data.thumbImgUrl)
-                .transform(new RoundedTransformation(20,10))
-                .into(holder.image);
+        if (data.nsfw && !showNsfw) {
+            Picasso.with(this.getContext())
+                    .load(data.thumbImgUrl)
+                    .transform(new RoundedTransformation(20,10))
+                    .transform(new BlurTransformation(this.getContext()))
+                    .into(holder.image);
+            System.out.println(data.thumbImgUrl);
+        } else {
+            Picasso.with(this.getContext())
+                    .load(data.thumbImgUrl)
+                    .transform(new RoundedTransformation(20, 10))
+                    .into(holder.image);
+            System.out.println(data.thumbImgUrl);
+        }
+
 
         return row;
     }
