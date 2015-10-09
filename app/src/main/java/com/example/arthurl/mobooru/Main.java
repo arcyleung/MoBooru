@@ -59,9 +59,6 @@ public class Main extends Activity {
     int current_page = 1;
     int currentScrollPos = 0;
     Boolean loadingMore = true;
-    Boolean stopLoadingData = false;
-    int scrolly = 0;
-    Parcelable state;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +68,7 @@ public class Main extends Activity {
         favstring = prefs.getString("FAV_SUBS", "" + R.string.defaultsub).replaceAll(",", "%2C");
         showNsfw = prefs.getBoolean("SHOW_NSFW", false);
         System.out.println(favstring);
-        s1 = "http://redditbooru.com/images/?sources=1" + favstring;
+        s1 = "http://redditbooru.com/images/?sources=" + favstring;
         runner = new LoadJSONasyncInit();
 
         try {
@@ -173,6 +170,7 @@ public class Main extends Activity {
     private class LoadMorePhotos extends AsyncTask<Void, Void, Void> {
 
         JSONArray tmp;
+
         @Override
         protected Void doInBackground(Void... arg0) {
 
@@ -185,6 +183,7 @@ public class Main extends Activity {
             try {
                 s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
                 url1 = new URL(s1 + lastTime);
+                System.out.println(s1 + lastTime);
 
                 Scanner scan = new Scanner(url1.openStream());
                 String str = "";
@@ -230,34 +229,43 @@ public class Main extends Activity {
 
 
     public ArrayList<Data> addToArry(JSONArray ja) {
+        if (loadingMore) {
 
-        for (int i = 0; i < pageSize; i++) {
-            Data data = new Data();
-            try {
-                data.thumbImgUrl = "http://redditbooru.com" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
-                data.imgUrl = ja.getJSONObject(i).getString("cdnUrl");
-                data.width = ja.getJSONObject(i).getInt("width");
-                data.height = ja.getJSONObject(i).getInt("height");
-                data.nsfw = ja.getJSONObject(i).getBoolean("nsfw");
-                data.title = ja.getJSONObject(i).getString("title");
-                data.desc = ja.getJSONObject(i).getString("sourceUrl");
-                data.rat = data.width / data.height;
-                if (i == pageSize-1){
-                    lastTime = Long.parseLong(ja.getJSONObject(i).getString("dateCreated"));
-                    System.out.println(lastTime);
+            //IMPLEMENT STOP LOADING ONCE ARRAYSIZE < PAGESIZE
+            if (ja == null) {
+                loadingMore = false;
+            } else {
+                if (ja.length() < pageSize) {
+                    pageSize = ja.length();
                 }
-            } catch (Exception e) {
-                System.out.println("JSON parse failed2");
-                e.printStackTrace();
+                for (int i = 0; i < pageSize; i++) {
+                    Data data = new Data();
+                    try {
+                        data.thumbImgUrl = "http://redditbooru.com" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
+                        data.imgUrl = ja.getJSONObject(i).getString("cdnUrl");
+                        data.width = ja.getJSONObject(i).getInt("width");
+                        data.height = ja.getJSONObject(i).getInt("height");
+                        data.nsfw = ja.getJSONObject(i).getBoolean("nsfw");
+                        data.title = ja.getJSONObject(i).getString("title");
+                        data.desc = ja.getJSONObject(i).getString("sourceUrl");
+                        data.rat = data.width / data.height;
+                        if (i == pageSize - 1) {
+                            lastTime = Long.parseLong(ja.getJSONObject(i).getString("dateCreated"));
+                            System.out.println(lastTime);
+                        }
+                    } catch (Exception e) {
+                        System.out.println("JSON parse failed2");
+                        e.printStackTrace();
+                    }
+                    if (data.desc.equals("null")) {
+                        data.desc = "";
+                    }
+                    if (data.thumbImgUrl.equals("null")) {
+                        data.thumbImgUrl = "";
+                    }
+                    datas.add(data);
+                }
             }
-            if (data.desc.equals("null")) {
-                data.desc = "";
-            }
-            if (data.thumbImgUrl.equals("null")) {
-                data.thumbImgUrl = "";
-            }
-
-            datas.add(data);
         }
         return datas;
     }

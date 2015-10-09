@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.etsy.android.grid.util.DynamicHeightImageView;
 import com.squareup.picasso.Picasso;
 
+import java.io.File;
 import java.util.List;
 
 public class DataAdapter extends ArrayAdapter<Data> {
@@ -56,20 +57,29 @@ public class DataAdapter extends ArrayAdapter<Data> {
         } else {
             holder.description.setText(data.desc);
         }
-        if (data.nsfw && !showNsfw) {
-            Picasso.with(this.getContext())
-                    .load(data.thumbImgUrl)
-                    .transform(new RoundedTransformation(20,10))
-                    .transform(new BlurTransformation(this.getContext()))
-                    .into(holder.image);
-            System.out.println(data.thumbImgUrl);
+        if (data.thumbImgUrl != ""){
+            if (data.nsfw && !showNsfw) {
+                Picasso.with(this.getContext())
+                        .load(data.thumbImgUrl)
+                        .transform(new RoundedTransformation(20,10))
+                        .transform(new BlurTransformation(this.getContext()))
+                        .into(holder.image);
+                System.out.println(data.thumbImgUrl);
+            } else {
+                Picasso.with(this.getContext())
+                        .load(data.thumbImgUrl)
+                        .transform(new RoundedTransformation(20, 10))
+                        .into(holder.image);
+                System.out.println(data.thumbImgUrl);
+            }
         } else {
             Picasso.with(this.getContext())
-                    .load(data.thumbImgUrl)
+                    .load(new File("img/404_notfound.jpg"))
                     .transform(new RoundedTransformation(20, 10))
                     .into(holder.image);
             System.out.println(data.thumbImgUrl);
         }
+
 
 
         return row;
