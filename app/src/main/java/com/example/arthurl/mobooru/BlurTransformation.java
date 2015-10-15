@@ -2,19 +2,26 @@ package com.example.arthurl.mobooru;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
+import java.io.File;
 
 import com.squareup.picasso.Transformation;
 
 public class BlurTransformation implements Transformation {
 
+    Context con;
+
     RenderScript rs;
     public BlurTransformation(Context context) {
         super();
         rs = RenderScript.create(context);
+        con = context;
     }
 
     @Override
@@ -40,7 +47,19 @@ public class BlurTransformation implements Transformation {
         output.copyTo(blurredBitmap);
         bitmap.recycle();
 
+//            blurredBitmap = overlay(BitmapFactory.decodeResource(con.getResources(),
+//                    R.drawable.nsfwlogo), blurredBitmap);
+
+
         return blurredBitmap;
+    }
+
+    private Bitmap overlay(Bitmap bitmap1, Bitmap bitmap2) {
+        Bitmap bmOverlay = Bitmap.createBitmap(bitmap1.getWidth(), bitmap1.getHeight(), bitmap1.getConfig());
+        Canvas canvas = new Canvas(bmOverlay);
+        canvas.drawBitmap(bitmap1, new Matrix(), null);
+        canvas.drawBitmap(bitmap2, new Matrix(), null);
+        return bmOverlay;
     }
 
     @Override

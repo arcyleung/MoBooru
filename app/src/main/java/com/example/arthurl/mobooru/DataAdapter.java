@@ -1,6 +1,7 @@
 package com.example.arthurl.mobooru;
 
 import android.app.Activity;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,7 @@ public class DataAdapter extends ArrayAdapter<Data> {
     int resource;
     List<Data> datas;
     Boolean showNsfw;
+    Uri nsfwLogo = Uri.parse("drawable/nsfwlogo.jpg");
 
     public DataAdapter(Activity activity, int resource, List<Data> objects, Boolean shwNsfw) {
         super(activity, resource, objects);
@@ -60,9 +62,7 @@ public class DataAdapter extends ArrayAdapter<Data> {
         if (data.thumbImgUrl != ""){
             if (data.nsfw && !showNsfw) {
                 Picasso.with(this.getContext())
-                        .load(data.thumbImgUrl)
-                        .transform(new RoundedTransformation(20,10))
-                        .transform(new BlurTransformation(this.getContext()))
+                        .load(R.drawable.nsfwlogo)
                         .into(holder.image);
                 System.out.println(data.thumbImgUrl);
             } else {
@@ -73,10 +73,10 @@ public class DataAdapter extends ArrayAdapter<Data> {
                 System.out.println(data.thumbImgUrl);
             }
         } else {
-            Picasso.with(this.getContext())
-                    .load(new File("img/404_notfound.jpg"))
-                    .transform(new RoundedTransformation(20, 10))
-                    .into(holder.image);
+//            Picasso.with(this.getContext())
+//                    .load(new File("drawable/404_notfound.jpg"))
+//                    .transform(new RoundedTransformation(20, 10))
+//                    .into(holder.image);
             System.out.println(data.thumbImgUrl);
         }
 
