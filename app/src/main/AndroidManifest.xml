@@ -23,6 +23,10 @@
             android:name=".Settings_subs"
             android:label="@string/title_activity_settings_subs" >
         </activity>
+        <activity
+            android:name=".SideDrawer"
+            android:label="@string/title_activity_side_drawer" >
+        </activity>
     </application>
 
 </manifest>

@@ -3,24 +3,36 @@ package com.example.arthurl.mobooru;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Point;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.util.Log;
+import android.view.Display;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.etsy.android.grid.StaggeredGridView;
 
 import org.json.*;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -44,6 +56,24 @@ public class Main extends Activity {
     String mainsite = "http://redditbooru.com";
     URL url1;
 
+    Display display;
+
+    private static Point getDisplaySize(final Display display) {
+        final Point point = new Point();
+        try {
+            display.getSize(point);
+        } catch (java.lang.NoSuchMethodError ignore) { // Legacy support
+            point.x = display.getWidth();
+            point.y = display.getHeight();
+        }
+        return point;
+    }
+
+    int screenWidth = 0;
+    int screenHeight = 0;
+    int bitmapWidth = 0;
+    int bitmapHeight = 0;
+
     // DEFAULT SETTINGS
     String favstring = "";
     Boolean showNsfw = false;
@@ -66,15 +96,20 @@ public class Main extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         favstring = prefs.getString("FAV_SUBS", "" + R.string.defaultsub).replaceAll(",", "%2C");
         showNsfw = prefs.getBoolean("SHOW_NSFW", false);
+
+        display = getWindowManager().getDefaultDisplay();
+        screenWidth = getDisplaySize(display).x;
+        screenHeight = getDisplaySize(display).y;
+
         System.out.println(favstring);
         s1 = "http://redditbooru.com/images/?sources=" + favstring;
         runner = new LoadJSONasyncInit();
-
 
         try {
             JSONArray jsonObjs = new JSONArray();
@@ -99,7 +134,38 @@ public class Main extends Activity {
         sgv.setOnItemClickListener(new StaggeredGridView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+
                 Toast.makeText(getActivity(), "Item Clicked: " + position, Toast.LENGTH_SHORT).show();
+                ImageView imView = new ImageView(getActivity());
+                try{
+
+                    Bitmap img = new DownloadImage(imView).execute(datas.get(position).imgUrl).get();
+                    bitmapWidth = img.getWidth();
+                    bitmapHeight = img.getHeight();
+
+                    BitmapDrawable resizedBitmap = new BitmapDrawable(getActivity().getResources(), Bitmap.createScaledBitmap(img, bitmapWidth, bitmapHeight, false));
+                    while(bitmapHeight > (screenHeight - 250) || bitmapWidth > (screenWidth - 250)) {
+                        bitmapHeight = bitmapHeight / 2;
+                        bitmapWidth = bitmapWidth / 2;
+                    }
+
+                    Dialog dialog = new Dialog(getActivity());
+                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                    dialog.setContentView(R.layout.popup_imgview);
+
+                    ImageView image = (ImageView) dialog.findViewById(R.id.imageview);
+
+                    image.setBackground(resizedBitmap);
+
+                    dialog.getWindow().setBackgroundDrawable(null);
+                    dialog.show();
+
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+
+//                finish();
+
             }
         });
     }
@@ -121,6 +187,40 @@ public class Main extends Activity {
 
     public Context getActivity() {
         return this;
+    }
+
+    private class DownloadImage extends AsyncTask<String, Void, Bitmap> {
+        ImageView bmImage;
+        ProgressDialog pDialog;
+
+        protected void onPreExecute(){
+            pDialog = new ProgressDialog(getActivity());
+            pDialog.setMessage("Downloading...");
+            pDialog.show();
+        }
+
+        public DownloadImage(ImageView bmImage) {
+            this.bmImage = bmImage;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+            System.out.println(urls[0]);
+            String urldisplay = urls[0];
+            Bitmap mIcon11 = null;
+            try {
+                InputStream in = new java.net.URL(urldisplay).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+//                Log.e("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            return mIcon11;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            pDialog.dismiss();
+            bmImage.setImageBitmap(result);
+        }
     }
 
     private class LoadJSONasyncInit extends AsyncTask<JSONArray, Void, JSONArray> {
