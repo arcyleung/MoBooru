@@ -2,7 +2,7 @@
 A mobile reader for redditbooru (WIP)
 a side project made with Android SDK
 
-+Infinite scrolling
++Infinite scrolling\n
 +Staggered (Dynamic height) View
 +Customizable subreddit list
 +Hide NSFW images
