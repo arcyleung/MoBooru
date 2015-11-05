@@ -1,5 +1,5 @@
 # MoBooru
-A mobile reader for redditbooru (WIP)
+A mobile reader for redditbooru (WIP)  
 a side project made with Android SDK
 
 +Infinite scrolling  
