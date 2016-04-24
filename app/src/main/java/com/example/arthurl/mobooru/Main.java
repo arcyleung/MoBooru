@@ -24,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -158,6 +159,7 @@ public class Main extends Activity {
                     image.setBackground(resizedBitmap);
 
                     dialog.getWindow().setBackgroundDrawable(null);
+                    dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
                     dialog.show();
 
                 } catch (Exception e){
