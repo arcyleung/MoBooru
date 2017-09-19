@@ -66,6 +66,7 @@ public class DataAdapter extends ArrayAdapter<Data> {
                         .into(holder.image);
                 System.out.println(data.thumbImgUrl);
             } else {
+                System.out.println(data.thumbImgUrl);
                 Picasso.with(this.getContext())
                         .load(data.thumbImgUrl)
                         .transform(new RoundedTransformation(20, 10))

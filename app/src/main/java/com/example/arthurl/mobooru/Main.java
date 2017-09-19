@@ -54,7 +54,7 @@ public class Main extends Activity {
 
     final String verstring = "MoBooru v. 0.2a";
 
-    String mainsite = "http://redditbooru.com";
+    String mainsite = "https://redditbooru.com";
     URL url1;
 
     Display display;
@@ -79,7 +79,7 @@ public class Main extends Activity {
     String favstring = "";
     Boolean showNsfw = false;
 
-    String s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
+    String s1 = "https://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
     long lastTime;
     Document doc;
     Elements redditSubs;
@@ -109,7 +109,7 @@ public class Main extends Activity {
         screenHeight = getDisplaySize(display).y;
 
         System.out.println(favstring);
-        s1 = "http://redditbooru.com/images/?sources=" + favstring;
+        s1 = "https://redditbooru.com/images/?sources=" + favstring;
         runner = new LoadJSONasyncInit();
 
         try {
@@ -286,12 +286,11 @@ public class Main extends Activity {
     }
 
     private class LoadMorePhotos extends AsyncTask<Void, Void, Void> {
-
         JSONArray tmp;
 
         @Override
         protected Void doInBackground(Void... arg0) {
-
+            System.out.println("loading more");
             // SET LOADING MORE "TRUE"
             loadingMore = true;
 
@@ -299,7 +298,7 @@ public class Main extends Activity {
             current_page += 1;
 
             try {
-                s1 = "http://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
+                s1 = "https://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
                 url1 = new URL(s1 + lastTime);
                 System.out.println(s1 + lastTime);
 
@@ -359,7 +358,7 @@ public class Main extends Activity {
                 for (int i = 0; i < pageSize; i++) {
                     Data data = new Data();
                     try {
-                        data.thumbImgUrl = "http://redditbooru.com" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
+                        data.thumbImgUrl = "https://redditbooru.com" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
                         data.imgUrl = ja.getJSONObject(i).getString("cdnUrl");
                         data.width = ja.getJSONObject(i).getInt("width");
                         data.height = ja.getJSONObject(i).getInt("height");
