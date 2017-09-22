@@ -13,6 +13,8 @@
         android:layout_alignParentLeft="true"
         android:focusable="false"
         android:focusableInTouchMode="false"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
         android:text="CheckBox" />
 
     <TextView
