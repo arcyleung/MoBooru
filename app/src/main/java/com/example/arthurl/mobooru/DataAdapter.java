@@ -64,21 +64,17 @@ public class DataAdapter extends ArrayAdapter<Data> {
                 Picasso.with(this.getContext())
                         .load(R.drawable.nsfwlogo)
                         .into(holder.image);
-                System.out.println(data.thumbImgUrl);
             } else {
-                System.out.println(data.thumbImgUrl);
                 Picasso.with(this.getContext())
                         .load(data.thumbImgUrl)
                         .transform(new RoundedTransformation(20, 10))
                         .into(holder.image);
-                System.out.println(data.thumbImgUrl);
             }
         } else {
 //            Picasso.with(this.getContext())
 //                    .load(new File("drawable/404_notfound.jpg"))
 //                    .transform(new RoundedTransformation(20, 10))
 //                    .into(holder.image);
-            System.out.println(data.thumbImgUrl);
         }
 
 

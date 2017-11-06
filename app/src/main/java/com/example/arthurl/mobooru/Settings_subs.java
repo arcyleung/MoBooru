@@ -18,42 +18,69 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Settings_subs extends Activity {
 
 
     ArrayList<Sub> subsList;
     CustomAdapter adp = null;
-    String favs;
-    String [] favsa;
+//    String favs;
+//    String [] favsa;
+    Map<Integer, Boolean> selectedSubs = new HashMap<Integer, Boolean>();
+    Gson gson = new Gson();
+    Type intBoolMap = new TypeToken<Map<Integer, Boolean>>(){}.getType();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings_subs);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        subsList = (ArrayList<Sub>) getIntent().getSerializableExtra("arylst");
+//        getActionBar().setDisplayHomeAsUpEnabled(true);
+
+        // List of subs
+        subsList = (ArrayList<Sub>) getIntent().getSerializableExtra("subs");
         Collections.sort(subsList);
+
+        // Checked favorite subs <sub_id, checked>
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
         if (prefs.getString("FAV_SUBS", ""+R.string.defaultsub).equals("")){
-            favs = "1";
+            selectedSubs = new HashMap<Integer, Boolean>();
+            for (int i = 0; i < subsList.size(); i++){
+                selectedSubs.put(subsList.get(i).subID, false);
+            }
+            selectedSubs.put(1, true);
+//            favs = "1";
         } else {
-            favs = prefs.getString("FAV_SUBS", ""+R.string.defaultsub);
+            try {
+                selectedSubs = gson.fromJson(prefs.getString("FAV_SUBS", ""+R.string.defaultsub), intBoolMap);
+            }
+            catch (Exception ex){
+                selectedSubs = new HashMap<Integer, Boolean>();
+                for (int i = 0; i < subsList.size(); i++){
+                    selectedSubs.put(subsList.get(i).subID, false);
+                }
+                selectedSubs.put(1, true);
+            }
+//            favs = prefs.getString("FAV_SUBS", ""+R.string.defaultsub);
         }
 
-        favsa = favs.split(",");
+//        favsa = favs.split(",");
 //        System.out.println(favsa.length + " --- " + favs);
-        for (int a = 0; a < favsa.length; a++){
-            for (int b = 0; b < subsList.size(); b++){
-                if (Integer.parseInt(favsa[a]) == subsList.get(b).subID){
-                    subsList.get(b).selected = true;
-                }
-            }
-        }
+//        for (int a = 0; a < favsa.length; a++){
+//            for (int b = 0; b < subsList.size(); b++){
+//                if (Integer.parseInt(favsa[a]) == subsList.get(b).subID){
+//                    subsList.get(b).selected = true;
+//                }
+//            }
+//        }
         displayList();
         buttonPressed();
     }
@@ -88,10 +115,11 @@ public class Settings_subs extends Activity {
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int p, long id) {
                 Sub sub = (Sub) parent.getItemAtPosition(p);
-                Toast.makeText(getApplicationContext(), " Selected " + sub.subname, Toast.LENGTH_LONG).show();
+//                Toast.makeText(getApplicationContext(), " Selected " + sub.subname, Toast.LENGTH_LONG).show();
                 ((Sub) parent.getItemAtPosition(p)).selected = !((Sub) parent.getItemAtPosition(p)).selected;
                 CheckBox cb = (CheckBox) view.findViewById(R.id.checkBox);
-                cb.setChecked(!cb.isChecked());
+                selectedSubs.put(sub.subID, !selectedSubs.get(sub.subID));
+                cb.setChecked(selectedSubs.get(sub.subID));
             }
         });
     }
@@ -129,11 +157,11 @@ public class Settings_subs extends Activity {
                 holder.name.setOnClickListener( new View.OnClickListener() {
                     public void onClick(View v) {
                         CheckBox cb = (CheckBox) v ;
-                        Toast.makeText(getApplicationContext(),
-                                "Clicked on Checkbox: " + cb.getText() +
-                                        " is " + cb.isChecked(),
-                                Toast.LENGTH_LONG).show();
-                        subsList.get(position).selected = cb.isChecked();
+//                        Toast.makeText(getApplicationContext(),
+//                                "Clicked on Checkbox: " + cb.getText() +
+//                                        " is " + cb.isChecked(),
+//                                Toast.LENGTH_LONG).show();
+                        subsList.get(position).selected = selectedSubs.get(subsList.get(position).subID);
                     }
                 });
             }
@@ -142,9 +170,10 @@ public class Settings_subs extends Activity {
             }
 
             Sub sb = subsList.get(position);
+
             holder.code.setText(" (" +  sb.subID + ")");
             holder.name.setText(sb.subname);
-            holder.name.setChecked(sb.selected);
+            holder.name.setChecked(selectedSubs.get(sb.subID));
             holder.name.setTag(sb);
 
             return convertView;
@@ -176,12 +205,13 @@ public class Settings_subs extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        String serial = "";
-        for (Sub s : subsList){
-            if (s.selected){
-                serial = serial + s.subID+",";
-            }
-        }
+//        String serial = "";
+//        for (Sub s : subsList){
+//            if (s.selected){
+//                serial = serial + s.subID+",";
+//            }
+//        }
+        String serial = gson.toJson(selectedSubs, intBoolMap);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         SharedPreferences.Editor prefsEditor = prefs.edit();
         prefsEditor.clear();

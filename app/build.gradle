@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.0'
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
 
     defaultConfig {
         applicationId "com.example.arthurl.mobooru"
@@ -28,6 +28,7 @@ dependencies {
     compile files('libs/jsoup-1.8.3.jar')
     compile 'com.etsy.android.grid:library:1.0.5'
     compile 'com.squareup.picasso:picasso:2.3.4'
-    compile 'com.android.support:support-v4:20.0.0'
+    compile 'com.android.support:support-v4:25.0.0'
     compile 'com.android.support:design:25.3.1'
+    compile 'com.google.code.gson:gson:2.8.+'
 }

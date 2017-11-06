@@ -9,7 +9,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.AppCompat.Light" >
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar" >
         <activity
             android:name=".Main"
             android:label="@string/app_name" >
@@ -22,10 +22,6 @@
         <activity
             android:name=".Settings_subs"
             android:label="@string/title_activity_settings_subs" >
-        </activity>
-        <activity
-            android:name=".SideDrawer"
-            android:label="@string/title_activity_side_drawer" >
         </activity>
     </application>
 

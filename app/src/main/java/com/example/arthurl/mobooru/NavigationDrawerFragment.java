@@ -3,8 +3,15 @@ package com.example.arthurl.mobooru;
 
 import android.app.Activity;
 import android.app.ActionBar;
+import android.app.AlertDialog;
 import android.app.Fragment;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.content.SharedPreferences;
@@ -84,30 +91,6 @@ public class NavigationDrawerFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         // Indicate that this fragment would like to influence the set of actions in the action bar.
         setHasOptionsMenu(true);
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        mDrawerListView = (ListView) inflater.inflate(
-                R.layout.drawer_side_drawer, container, false);
-        mDrawerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                selectItem(position);
-            }
-        });
-        mDrawerListView.setAdapter(new ArrayAdapter<String>(
-                getActionBar().getThemedContext(),
-                android.R.layout.simple_list_item_activated_1,
-                android.R.id.text1,
-                new String[]{
-                        getString(R.string.title_section1),
-                        getString(R.string.title_section2),
-                        getString(R.string.title_section3),
-                }));
-        mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
-        return mDrawerListView;
     }
 
     public boolean isDrawerOpen() {
@@ -278,5 +261,42 @@ public class NavigationDrawerFragment extends Fragment {
          * Called when an item in the navigation drawer is selected.
          */
         void onNavigationDrawerItemSelected(int position);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public void onDrawerItemSelected(View view, int position) {
+        displayView(position);
+        switch (position) {
+            case 0:
+                startActivity(new Intent(NavigationDrawerFragment.this.getActivity(), Settings_subs.class).putExtra("arylst", ((Main) getActivity()).subsList));
+                break;
+            case 1:
+                break;
+            case 2:
+                new AlertDialog.Builder(getContext())
+                        .setTitle("About")
+                        .setMessage("Author: pspkazy\nSite: http://github.com/pspkazy\n2014-2015")
+                        .setNegativeButton("Back", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                // do nothing
+                            }
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+                break;
+
+
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void displayView(int position) {
+
+//        if (fragment != null) {
+//            FragmentManager fragmentManager = getSupportFragmentManager();
+//            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//            fragmentTransaction.replace(R.id.container_body, fragment);
+//            fragmentTransaction.commit();
+//        }
     }
 }

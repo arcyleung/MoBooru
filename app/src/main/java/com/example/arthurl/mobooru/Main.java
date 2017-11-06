@@ -16,42 +16,44 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
-import android.util.Log;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.ViewCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Display;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ImageView;
-import android.widget.Toast;
+import android.support.v7.widget.Toolbar;
 
 import com.etsy.android.grid.StaggeredGridView;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
-import org.json.*;
-
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Scanner;
-
+import org.json.JSONArray;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
-public class Main extends Activity {
+
+public class Main extends AppCompatActivity {
 
     final String verstring = "MoBooru v. 0.2a";
-    public ArrayList<Data> datas = new ArrayList<Data>();
+    public ArrayList<Data> datas = new ArrayList<>();
     int pageSize = 30;
     String mainsite = "https://redditbooru.com";
     URL url1;
@@ -67,18 +69,29 @@ public class Main extends Activity {
     long lastTime;
     Document doc;
     Elements redditSubs;
-    ArrayList<Sub> subsList = new ArrayList<Sub>();
+    ArrayList<Sub> subsList = new ArrayList<>();
     String catJSONs = "";
     JSONArray catJSONa;
     LoadJSONasyncInit runner;
     JSONArray jsonObjs;
     LoadMorePhotos lm;
     int current_page = 1;
-    int currentScrollPos = 0;
     Boolean loadingMore = true;
     private StaggeredGridView sgv;
     private DataAdapter adapter;
 
+    AppBarLayout appBarLayout;
+
+    private Toolbar mToolbar;
+
+    Map<Integer, Boolean> selectedSubs = new HashMap<Integer, Boolean>();
+    Gson gson = new Gson();
+    Type intBoolMap = new TypeToken<Map<Integer, Boolean>>(){}.getType();
+
+    SharedPreferences prefs;
+
+
+    @SuppressWarnings("deprecation")
     private static Point getDisplaySize(final Display display) {
         final Point point = new Point();
         try {
@@ -96,15 +109,56 @@ public class Main extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        favstring = prefs.getString("FAV_SUBS", "" + R.string.defaultsub).replaceAll(",", "%2C");
+        NavigationView navigationView = (NavigationView) findViewById(R.id.navigationView);
+
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+
+        setSupportActionBar(mToolbar);
+
+        try {
+            prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+            selectedSubs = gson.fromJson(prefs.getString("FAV_SUBS", ""+R.string.defaultsub), intBoolMap);
+        }
+        catch (Exception ex){
+            selectedSubs.put(1, true);
+        }
+
+        setSubs();
+
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+
+                    case R.id.nav_subs:
+                        startActivity(new Intent(Main.this, Settings_subs.class).putExtra("subs", subsList));
+                        return true;
+//                        drawerLayout.closeDrawers();
+                    case R.id.nav_about:
+                        new AlertDialog.Builder(Main.this)
+                                .setTitle("About")
+                                .setMessage("Author: arcyleung\nSite: http://arcyleung.com")
+                                .setNegativeButton("Back", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // do nothing
+                                    }
+                                })
+                                .setIcon(R.mipmap.ic_launcher)
+                                .show();
+                        return true;
+
+                }
+                return false;
+            }
+        });
+
+//        favstring = prefs.getString("FAV_SUBS", "" + R.string.defaultsub).replaceAll(",", "%2C");
         showNsfw = prefs.getBoolean("SHOW_NSFW", false);
 
         display = getWindowManager().getDefaultDisplay();
         screenWidth = getDisplaySize(display).x;
         screenHeight = getDisplaySize(display).y;
 
-        System.out.println(favstring);
         s1 = "https://redditbooru.com/images/?sources=" + favstring;
         runner = new LoadJSONasyncInit();
 
@@ -123,9 +177,12 @@ public class Main extends Activity {
                     lm.execute();
                 }
             });
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                System.out.println("Enabling nested scrolling");
+                sgv.setNestedScrollingEnabled(true);
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("jsonparsefailed");
         }
 
         sgv.setOnItemClickListener(new StaggeredGridView.OnItemClickListener() {
@@ -133,29 +190,23 @@ public class Main extends Activity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
 
-                ImageView imView = new ImageView(getActivity());
+                InteractiveImageView zoomImageView = new InteractiveImageView(getActivity());
                 Dialog dialog = new Dialog(getActivity());
                 try {
 
-                    Bitmap img = new DownloadImage(imView).execute(datas.get(position).imgUrl).get();
+                    Bitmap img = new DownloadImage(zoomImageView).execute(datas.get(position).imgUrl).get();
                     bitmapWidth = img.getWidth();
                     bitmapHeight = img.getHeight();
 
-                    BitmapDrawable resizedBitmap = new BitmapDrawable(getActivity().getResources(), Bitmap.createScaledBitmap(img, bitmapWidth, bitmapHeight, false));
-                    while (bitmapHeight > (screenHeight - 250) || bitmapWidth > (screenWidth - 250)) {
-                        bitmapHeight = bitmapHeight / 2;
-                        bitmapWidth = bitmapWidth / 2;
-                    }
-
-
-                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+//                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                     dialog.setContentView(R.layout.popup_imgview);
-
-                    ImageView image = (ImageView) dialog.findViewById(R.id.imageview);
-                    image.setBackground(resizedBitmap);
-
                     dialog.getWindow().setBackgroundDrawable(null);
-                    dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+
+                    InteractiveImageView image = (InteractiveImageView) dialog.findViewById(R.id.imageview);
+                    image.setImageBitmap(img);
+
+
+                    dialog.getWindow().setLayout(screenWidth, screenHeight);
                     dialog.show();
 
                 } catch (Exception e) {
@@ -163,6 +214,13 @@ public class Main extends Activity {
                 }
             }
         });
+
+        ViewCompat.setNestedScrollingEnabled(sgv,true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            sgv.setNestedScrollingEnabled(true);
+        }
+        System.out.println("[DBG] Enabled nested scrolling");
+
     }
 
     @Override
@@ -178,6 +236,15 @@ public class Main extends Activity {
         // This method probably sends out a network request and appends new data items to your adapter.
         // Use the offset value and add it as a parameter to your API request to retrieve paginated data.
         // Deserialize API response and then construct new objects to append to the adapter
+    }
+
+    public void setSubs(){
+        favstring = "";
+            for (int sub : selectedSubs.keySet()){
+                if (selectedSubs.get(sub)){
+                    favstring += sub + "%2C";
+                }
+            }
     }
 
     @Override
@@ -209,7 +276,7 @@ public class Main extends Activity {
                 for (int i = 0; i < pageSize; i++) {
                     Data data = new Data();
                     try {
-                        data.thumbImgUrl = "https://redditbooru.com" + ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
+                        data.thumbImgUrl = ja.getJSONObject(i).getString("thumb") + "_300_300.jpg";
                         data.imgUrl = ja.getJSONObject(i).getString("cdnUrl");
                         data.width = ja.getJSONObject(i).getInt("width");
                         data.height = ja.getJSONObject(i).getInt("height");
@@ -219,10 +286,8 @@ public class Main extends Activity {
                         data.rat = data.width / data.height;
                         if (i == pageSize - 1) {
                             lastTime = Long.parseLong(ja.getJSONObject(i).getString("dateCreated"));
-                            System.out.println(lastTime);
                         }
                     } catch (Exception e) {
-                        System.out.println("JSON parse failed2");
                         e.printStackTrace();
                     }
                     if (data.desc.equals("null")) {
@@ -238,34 +303,34 @@ public class Main extends Activity {
         return datas;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_settings:
-                startActivity(new Intent(Main.this, Settings_subs.class).putExtra("arylst", subsList));
-                return true;
-            case R.id.action_about:
-                new AlertDialog.Builder(this)
-                        .setTitle("About")
-                        .setMessage("Author: pspkazy\nSite: http://github.com/pspkazy\n2014-2015")
-                        .setNegativeButton("Back", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                // do nothing
-                            }
-                        })
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .show();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) {
+//            case R.id.nav_subs:
+//                startActivity(new Intent(Main.this, Settings_subs.class).putExtra("subs", subsList));
+//                return true;
+//            case R.id.nav_about:
+//                new AlertDialog.Builder(this)
+//                        .setTitle("About")
+//                        .setMessage("Author: arcyleung\nSite: http://arcyleung.com")
+//                        .setNegativeButton("Back", new DialogInterface.OnClickListener() {
+//                            public void onClick(DialogInterface dialog, int which) {
+//                                // do nothing
+//                            }
+//                        })
+//                        .setIcon(android.R.drawable.ic_dialog_alert)
+//                        .show();
+//                return true;
+//            default:
+//                return super.onOptionsItemSelected(item);
+//        }
+//    }
 
     private class DownloadImage extends AsyncTask<String, Void, Bitmap> {
-        ImageView bmImage;
+        InteractiveImageView bmImage;
         ProgressDialog pDialog;
 
-        public DownloadImage(ImageView bmImage) {
+        DownloadImage(InteractiveImageView bmImage) {
             this.bmImage = bmImage;
         }
 
@@ -276,7 +341,6 @@ public class Main extends Activity {
         }
 
         protected Bitmap doInBackground(String... urls) {
-            System.out.println(urls[0]);
             String urldisplay = urls[0];
             Bitmap mIcon11 = null;
             try {
@@ -291,7 +355,7 @@ public class Main extends Activity {
 
         protected void onPostExecute(Bitmap result) {
             pDialog.dismiss();
-            bmImage.setImageBitmap(result);
+            bmImage.setImageDrawable(new BitmapDrawable(getResources(), result));
         }
     }
 
@@ -323,18 +387,18 @@ public class Main extends Activity {
                 for (int j = 0; j < catJSONa.length(); j++) {
                     subsList.add(new Sub(catJSONa.getJSONObject(j).getString("name"), catJSONa.getJSONObject(j).getInt("value")));
                 }
-//                System.out.println(subsList.size());
 
             } catch (Exception e) {
-                System.out.println("connection failed");
                 e.printStackTrace();
             }
 
+            String str = "";
+
             try {
+                s1 = "https://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
                 url1 = new URL(s1 + lastTime);
 
                 Scanner scan = new Scanner(url1.openStream());
-                String str = "";
                 while (scan.hasNext())
                     str += scan.nextLine();
                 scan.close();
@@ -342,7 +406,6 @@ public class Main extends Activity {
                 jsonObjs = new JSONArray(str);
 
             } catch (Exception e) {
-                System.out.println("JSON parse failed");
                 e.printStackTrace();
             }
 
@@ -360,7 +423,6 @@ public class Main extends Activity {
 
         @Override
         protected Void doInBackground(Void... arg0) {
-            System.out.println("loading more");
             // SET LOADING MORE "TRUE"
             loadingMore = true;
 
@@ -370,7 +432,6 @@ public class Main extends Activity {
             try {
                 s1 = "https://redditbooru.com/images/?sources=" + favstring + "&afterDate=";
                 url1 = new URL(s1 + lastTime);
-                System.out.println(s1 + lastTime);
 
                 Scanner scan = new Scanner(url1.openStream());
                 String str = "";
@@ -380,7 +441,6 @@ public class Main extends Activity {
 
                 tmp = new JSONArray(str);
             } catch (Exception e) {
-                System.out.println("JSON parse failed");
                 e.printStackTrace();
             }
 
@@ -391,7 +451,7 @@ public class Main extends Activity {
         protected void onPostExecute(Void result) {
 
             // get listview current position - used to maintain scroll position
-            int currentPosition = sgv.getFirstVisiblePosition();
+//            int currentPosition = sgv.getFirstVisiblePosition();
 
             // APPEND NEW DATA TO THE ARRAYLIST AND SET THE ADAPTER TO THE
             // LISTVIEW

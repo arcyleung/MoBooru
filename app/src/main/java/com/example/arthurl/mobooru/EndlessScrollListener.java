@@ -1,6 +1,8 @@
 package com.example.arthurl.mobooru;
 
+import android.support.design.widget.AppBarLayout;
 import android.widget.AbsListView;
+import android.widget.ListView;
 
 /**
  * Created by pspka_000 on 9/11/2015.
@@ -37,6 +39,7 @@ public abstract class EndlessScrollListener implements AbsListView.OnScrollListe
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount)
     {
+
         // If the total item count is zero and the previous isn't, assume the
         // list is invalidated and should be reset back to initial state
         if (totalItemCount < previousTotalItemCount) {
@@ -67,6 +70,6 @@ public abstract class EndlessScrollListener implements AbsListView.OnScrollListe
 
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
-        // Don't take any action on changed
+
     }
 }
